@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 
@@ -22,17 +23,21 @@ public class Receiver {
 
     @KafkaListener(topics = Topic.REQUEST_BUY, groupId = "group_id_wallet")
     public void consumeFormGateway(String param) {
-        logger.info("Has been published an insert payment from service gateway-mobile : " + param);
+        logger.info("Has been published an insert payment from service gateway-krf : " + param);
         var value = new RequestBuyBootCoin();
         try {
             value = JsonUtils.convertFromJsonToObject(param, RequestBuyBootCoin.class);
             if (value.getPayMode().equals("Yunki")) {
                 logger.info("search wallet");
                 var find = walletService.findByNumberPhone(value.getNumber());
-                find.doOnNext(p -> {
-                    sender.sendNumberAccountOrigin(p.getNumberAccount());
 
-                }).subscribe();
+                RequestBuyBootCoin finalValue = value;
+                find.switchIfEmpty(Mono.error(new ClassNotFoundException("not exist wallet")))
+                        .doOnNext(p -> {
+
+                            finalValue.setNumber(p.getNumberAccount());
+                            sender.sendRequestBuyBootCoinToAccount(finalValue);
+                        }).subscribe();
                 logger.info("send messages to account -->");
 
             } else {
@@ -45,11 +50,25 @@ public class Receiver {
         }
     }
 
-    @KafkaListener(topics = Topic.RESPONSE_ACCOUNT_TO_WALLET, groupId = "group_id_wallet")
+    @KafkaListener(topics = Topic.RESPONSE_REQUEST_BUY_BOOT_COIN_WALLET, groupId = "group_id_wallet")
     public void consumeFormAccount(String param) {
-        logger.info("Has been published an response from service account-krf : " + param);
-        sender.sendAccountToPayment(param);
+        logger.info("Has been published an insert payment from service gateway-mobile : " + param);
+        var value = new RequestBuyBootCoin();
+        try {
+            value = JsonUtils.convertFromJsonToObject(param, RequestBuyBootCoin.class);
+            logger.info("search wallet");
+            var find = walletService.findByNumberAccount(value.getNumber());
+            RequestBuyBootCoin finalValue = value;
+            find.switchIfEmpty(Mono.error(new ClassNotFoundException("not exist wallet")))
+                    .doOnNext(p -> {
+                        finalValue.setNumber(p.getNumberPhone());
+                        sender.sendRequestBuyBootCoinToPayment(finalValue);
+                    }).subscribe();
+            logger.info("send messages to payment -->");
 
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 

@@ -37,6 +37,13 @@ public class WalletService {
         return reactiveMongoTemplate.findOne(query, Wallet.class).map(WalletUtil::entityToDto);
 
     }
+    public Mono<WalletDto> findByNumberAccount(String number) {
+        logger.info("inside methode find by number account ");
+        Query query = new Query();
+        query.addCriteria(Criteria.where("numberAccount").is(number));
+        return reactiveMongoTemplate.findOne(query, Wallet.class).map(WalletUtil::entityToDto);
+
+    }
 
     public Mono<WalletDto> findById(final String id) {
         return iWalletRepository.findById(id).map(WalletUtil::entityToDto);

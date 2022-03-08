@@ -1,6 +1,6 @@
 package com.dvivasva.wallet.message;
 
-import com.dvivasva.wallet.dto.WalletDto;
+import com.dvivasva.wallet.entity.RequestBuyBootCoin;
 import com.dvivasva.wallet.utils.Topic;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -13,22 +13,14 @@ import org.springframework.stereotype.Service;
 public class Sender {
 
     private static final Logger logger = LoggerFactory.getLogger(Sender.class);
+    private final KafkaTemplate<String, RequestBuyBootCoin> requestBuyBootCoinKafkaTemplateKafka;
 
-    private final KafkaTemplate<String, String> kafkaTemplate;
-    private final KafkaTemplate<String, WalletDto> walletDtoKafkaTemplate;
-
-    public void sendNumberAccountOrigin(String value) {
-        kafkaTemplate.send(Topic.FIND_ACCOUNT_ORIGIN,value);
+    public void sendRequestBuyBootCoinToAccount(RequestBuyBootCoin finalValue) {
+        requestBuyBootCoinKafkaTemplateKafka.send(Topic.FIND_ACCOUNT_ORIGIN,finalValue);
         logger.info("Messages successfully pushed on topic: " + Topic.FIND_ACCOUNT_ORIGIN);
     }
-
-    public void sendAccountToPayment(String value) {
-        kafkaTemplate.send(Topic.RESPONSE_ACCOUNT_FROM_WALLET,value);
-        logger.info("send messages to payment-->");
-        logger.info("Messages successfully pushed on topic: " + Topic.RESPONSE_ACCOUNT_FROM_WALLET);
-    }
-    public void responseWallet(WalletDto value) {
-        walletDtoKafkaTemplate.send(Topic.RESPONSE_WALLET,value);
-        logger.info("Messages successfully pushed on topic: " + Topic.RESPONSE_WALLET);
+    public void sendRequestBuyBootCoinToPayment(RequestBuyBootCoin finalValue) {
+        requestBuyBootCoinKafkaTemplateKafka.send(Topic.RESPONSE_REQUEST_BUY_BOOT_COIN_WALLET_PARSE,finalValue);
+        logger.info("Messages successfully pushed on topic: " + Topic.RESPONSE_REQUEST_BUY_BOOT_COIN_WALLET_PARSE);
     }
 }
